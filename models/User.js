@@ -2,9 +2,9 @@ const mongoose = require('mongoose')
 
 const UserSchema = new mongoose.Schema(
  {
-   name: String,
-   email: String,
-   password: String,
+   name: { type: String, required: true },   
+   email: { type: String, required: true, unique: true }, // Restricción de email único
+   password: { type: String, required: true },
    age: Number,
    tokens: [],
    role: String,
@@ -15,3 +15,4 @@ const UserSchema = new mongoose.Schema(
 const User = mongoose.model('User', UserSchema)
 
 module.exports = User
+

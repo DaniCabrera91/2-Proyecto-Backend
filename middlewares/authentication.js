@@ -30,9 +30,9 @@ const isAdmin = async (req, res, next) => {
 
 const isAuthor = async (req, res, next) => {
     try {
-      const order = await Order.findById(req.params._id)
-      if (order.userId.toString() !== req.user._id.toString()) {
-        return res.status(403).send({ message: 'Este pedido no es tuyo' })
+      const post = await Post.findById(req.params._id)
+      if (post.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).send({ message: 'Este post no es tuyo' })
       }
       next()
     } catch (error) {
