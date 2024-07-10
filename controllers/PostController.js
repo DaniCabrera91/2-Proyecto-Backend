@@ -9,7 +9,7 @@ const PostController = {
       return res.status(400).send({ message: 'Title and body are required fields' })
     }
     try {
-      const newPost = await Post.create({ title, body })
+      const newPost = await Post.create({ title, body, userId: req.user._id,})
       res.status(201).send(newPost)
     } catch (error) {
       console.error(error)
@@ -47,23 +47,29 @@ async delete(req, res) {
   }
 },
 
- async getAllPages(req, res) {
+async getAllPages(req, res) {
   try {
-    const { page = 1, limit = 10 } = req.query
-    const posts = await Post.find()
-      .populate ('comments.userId')
+    const { page = 1, limit = 10 } = req.query;
+
+    const posts = await Post.find({})
+      .populate({
+        path: 'userId', // Field name in the Post schema referencing the user
+        select: 'name' // Select specific user fields
+      })
       .limit(limit)
-      .skip((page - 1) * limit)
-    res.send(posts)
+      .skip((page - 1) * limit);
+
+    res.status(200).json(posts); // Send response with status code for clarity
   } catch (error) {
-    console.error(error)
+    console.error(error);
+    res.status(500).json({ message: "Error fetching posts" }); // Handle errors gracefully
   }
 },
 
- async getPostsByName(req, res) {
+ async getPostsByTitle(req, res) {
   try {
-    const name = new RegExp(req.params.name, 'i')
-    const posts = await Post.find({ name })
+    const title = new RegExp(req.params.title, 'i')
+    const posts = await Post.find({ title })
     res.send(posts)
   } catch (error) {
     console.log(error)

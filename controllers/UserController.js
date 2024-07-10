@@ -98,21 +98,16 @@ const UserController = {
       })
     }
   },
+
   async getAll(req, res) {
     try {
-      // Get all users without pagination
-      const users = await User.find({});
-  
-      // Check if any users found
-      if (!users.length) {
-        return res.status(204).send({ message: 'No se encontraron usuarios' }); // 204 No Content
-      }
-  
-      // Send successful response with all users
-      res.status(200).send({ users });
+      const { page = 1, limit = 10 } = req.query
+      const users = await User.find()
+        .limit(limit)
+        .skip((page - 1) * limit)
+      res.send(users)
     } catch (error) {
-      console.error(error);
-      res.status(500).send({ message: 'Error al obtener usuarios' });
+      console.error(error)
     }
   },
 
