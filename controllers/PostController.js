@@ -1,23 +1,26 @@
 const Post = require('../models/Post')
+const jwt = require('jsonwebtoken')
 
 const PostController = {
   
- async create(req, res) {
-  const { post} = req.body;
-      if (!post) {
-          return res.status(400).send('Error: Falta algún campo por rellenar');
+  async create(req, res) {
+    const { title, body } = req.body
+    if (!title || !body) {
+      return res.status(400).send({ message: 'Title and body are required fields' })
+    }
+    try {
+      const newPost = await Post.create({ title, body })
+      res.status(201).send(newPost)
+    } catch (error) {
+      console.error(error)
+  
+      if (error.name === 'ValidationError') {
+        return res.status(400).send({ message: 'Validation error: ' + error.message })
+      } else {
+        return res.status(500).send({ message: 'Error creating post' })
       }
-      req.body.role = 'post';
-   try {
-     const post = await Post.create(req.body)
-     res.status(201).send(post)
-   } catch (error) {
-     console.error(error)
-     res
-       .status(500)
-       .send({ message: 'Ha habido algún problema al crear el post' })
-   }
- },
+    }
+  },
 
  async update(req, res) {
   try {
@@ -26,25 +29,11 @@ const PostController = {
       req.body,
       { new: true }
     )
-    res.send({ message: 'Post actualizado con éxito', post })
+    res.send({ message: 'Post actualizado correctamente', post })
   } catch (error) {
     console.error(error)
   }
 },
-
-async insertComment(req, res) {
-  try {
-    const post = await Post.findByIdAndUpdate(
-      req.params._id,
-      {$push: { comments: { comment: req.body.comment, userId: req.user._id }},
-      }, { new: true })
-    res.send(post)
-  } catch (error) {
-    console.error(error)
-    res.status(500).send({ message: 'Hubo un problema con el Post' })
-  }
-},
-
 
 async delete(req, res) {
   try {
@@ -90,6 +79,23 @@ async getById(req, res) {
   }
 },
 
+async like(req, res) {
+  try {
+    const post = await Pots.findByIdAndUpdate(
+      req.params._id,
+      { $push: { likes: req.user._id } },
+      { new: true })
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $push: { wishList: req.params._id } },
+      { new: true })
+    res.send(post)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send({ message: "Hay habido un problema con tu petición" })
+  }
+},
+ 
 }
 
 module.exports = PostController
