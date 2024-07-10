@@ -1,13 +1,21 @@
 const mongoose = require('mongoose')
+const ObjectId = mongoose.SchemaTypes.ObjectId
 
-const UserSchema = new mongoose.Schema(
+const PostSchema = new mongoose.Schema(
  {
    title: { type: String},   
    body: { type: String},
+   comments: [
+    {
+      userId: { type: ObjectId, ref: 'User' },
+      commentId: { type: ObjectId, ref: 'Comment' },
+    },
+  ],
+
  },
  { timestamps: true }
 )
 
-const Post = mongoose.model('Post', UserSchema)
+const Post = mongoose.model('Post', PostSchema)
 
 module.exports = Post
