@@ -1,19 +1,20 @@
-const mongoose = require('mongoose')
-const ObjectId = mongoose.SchemaTypes.ObjectId
+const mongoose = require("mongoose");
+const ObjectId = mongoose.SchemaTypes.ObjectId;
 
-const CommentSchema = new mongoose.Schema(
- {
-   comment: String,
-   date: Date,
-   posts: [
-    { 
-    postId: { type: ObjectId, ref: 'Post' },
-    comment: String,
-    },
-   ],
- },
- { timestamps: true }
-)
+const CommentSchema = mongoose.Schema(
+  {
+    comment: { type: String, required: true },
+    postId: { type: ObjectId, ref: "Post", required: true},
+    userId: { type: ObjectId, ref: "User", required: true},
+    likes: [{ type: ObjectId, ref: "User" }],
+  },
+  { timestamps: true }
+);
 
-const Comment = mongoose.model('Comment', CommentSchema)
+CommentSchema.index({
+  content: "text",
+})
+
+const Comment = mongoose.model("Comment", CommentSchema)
+
 module.exports = Comment

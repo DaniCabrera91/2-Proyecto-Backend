@@ -12,7 +12,8 @@ router.delete ('/:_id', authentication, isAuthor,PostController.delete)
 router.get ('/', PostController.getAllPages)
 router.get ('/title/:title', PostController.getPostsByTitle)
 router.get ('/id/:_id',PostController.getById)
-router.put('/likes/:_id', authentication, PostController.like)
 
+router.put('/like/id/:_id', authentication, PostController.like)
+router.delete('/like/id/:_id', authentication, PostController.removeLike);
 
 module.exports = router

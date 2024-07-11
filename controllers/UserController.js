@@ -120,7 +120,7 @@ const UserController = {
         return res.status(401).send({ message: 'Token no valido' })
       }
       // Fetch user data
-      const user = await User.findById(userLog._id);
+      const user = await User.findById(userLog._id).populate("posts")
       if (!user) {
         return res.status(404).send({ message: 'Usuario no encontrado asignado a ese token' })
       }

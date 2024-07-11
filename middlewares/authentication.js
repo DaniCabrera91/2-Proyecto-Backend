@@ -38,7 +38,7 @@ const isAuthor = async (req, res, next) => {
       return res.status(404).send({ message: 'Post no encontrado' })
     }
     if (post.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).send({ message: 'This post is not yours' })
+      return res.status(403).send({ message: 'No tienes la autoría de esta publicación' })
     }
     next();
   } catch (error) {
