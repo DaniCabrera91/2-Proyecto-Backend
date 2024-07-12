@@ -105,7 +105,7 @@ const PostController = {
   async like(req, res) {
     try {
       const post = await Post.findByIdAndUpdate(
-        req.params.id,
+        req.params._id,
         {
           $push: {
             likes: req.user._id,
@@ -113,7 +113,7 @@ const PostController = {
         },
         { new: true }
       );
-      res.send(post)
+      res.send({message: 'Like dado con éxito', post})
     } catch (error) {
       console.error(error)
       res.status(400).send({ message: 'No ha podido darse like al post' })
@@ -123,20 +123,21 @@ const PostController = {
   async removeLike(req, res) {
     try {
       const post = await Post.findByIdAndUpdate(
-        req.params.id,
+        req.params._id,
+        
         {
           $pull: {
             likes: req.user._id,
           },
         },
         { new: true }
-      );
-      res.send(post)
+      )
+      res.send({message: 'Like quitado con éxito', post})   
     } catch (error) {
       console.error(error)
-      res.status(400).send({ message: 'No ha podido eliminarse el like' })
+      res.status(400).send({ message: 'No ha podido eliminarse el like del post' })
     }
   },
-};
+}
 
-module.exports = PostController;
+module.exports = PostController
