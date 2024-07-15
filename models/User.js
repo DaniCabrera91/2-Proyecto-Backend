@@ -25,6 +25,8 @@ const UserSchema = new mongoose.Schema({
   tokens: [],
   wishList: [{ type: ObjectId, ref: 'Post' }],
   posts: [{ type: ObjectId, ref: 'Post' }],
+  followers: [{ type: ObjectId, ref: 'User' }],
+  following: [{ type: ObjectId, ref: 'User' }],
 },
 { timestamps: true }
 )

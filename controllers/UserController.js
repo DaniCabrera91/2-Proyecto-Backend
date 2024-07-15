@@ -126,7 +126,9 @@ async getLoggedUser(req, res) {
     const user = await User.findById(userLog._id).populate({
       path: 'posts',
       model: 'Post',
-      localField: 'posts', 
+      localField: 'posts',
+      following,
+      followers, 
     })
 
     if (!user) {
@@ -187,6 +189,84 @@ async getById(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: 'Error al obtener usuario' });
+  }
+},
+
+async follow(req, res, next) {
+  try {
+    const { userIdToFollow } = req.params; // User ID to follow
+
+    // Check if user exists
+    const userToFollow = await User.findById(userIdToFollow);
+    if (!userToFollow) {
+      return res.status(404).send({ message: 'Usuario a seguir no encontrado' });
+    }
+
+    // Check if user is trying to follow themselves
+    if (userToFollow._id.equals(req.user._id)) {
+      return res.status(400).send({ message: 'No puedes seguirte a ti mismo' });
+    }
+
+    // Check if user is already following
+    const isAlreadyFollowing = req.user.following.some(
+      (followingId) => followingId.equals(userIdToFollow)
+    );
+    if (isAlreadyFollowing) {
+      return res.status(400).send({ message: 'Ya estás siguiendo a este usuario' });
+    }
+
+    // Update following and followers arrays
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $push: { following: userIdToFollow } },
+      { new: true } // Return the updated user
+    );
+    await User.findByIdAndUpdate(
+      userIdToFollow,
+      { $push: { followers: req.user._id } },
+      { new: true }
+    )
+    res.status(200).send({ message: 'Siguiendo a usuario con éxito' });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+},
+
+async unfollow(req, res, next) {
+  try {
+    const { userIdToUnfollow } = req.params; // User ID to unfollow
+
+    // Check if user exists
+    const userToUnfollow = await User.findById(userIdToUnfollow);
+    if (!userToUnfollow) {
+      return res.status(404).send({ message: 'Usuario a dejar de seguir no encontrado' });
+    }
+
+    // Check if user is already following
+    const isFollowing = req.user.following.some(
+      (followingId) => followingId.equals(userIdToUnfollow)
+    );
+    if (!isFollowing) {
+      return res.status(400).send({ message: 'No estás siguiendo a este usuario' });
+    }
+
+    // Update following and followers arrays
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $pull: { following: userIdToUnfollow } },
+      { new: true } // Return the updated user
+    );
+    await User.findByIdAndUpdate(
+      userIdToUnfollow,
+      { $pull: { followers: req.user._id } },
+      { new: true }
+    );
+
+    res.status(200).send({ message: 'Usuario dejado de seguir con éxito' });
+  } catch (error) {
+    console.error(error);
+    next(error);
   }
 },
 
