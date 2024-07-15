@@ -7,7 +7,7 @@ const PostController = {
       const post = await Post.create({ ...req.body, userId: req.user._id });
       await User.findByIdAndUpdate(req.user._id, {
         $push: { posts: post._id },
-      });
+      })
 
       res.status(201).send({ message: "Post creado con éxito", post });
     } catch (error) {
@@ -22,17 +22,13 @@ const PostController = {
       const { page = 1, limit = 10 } = req.query;
   
       const posts = await Post.find()
-        // Populate post author (userId)
         .populate({ path: 'userId', select: 'name + email' })
-  
-        // Populate comments with username from userId
         .populate({
           path: 'comments',
-          populate: { path: 'userId', select: 'name + email' }, // Select only username from user
+          populate: { path: 'userId', select: 'name + email' },
         })
         .limit(limit)
         .skip((page - 1) * limit);
-  
       res.send(posts);
     } catch (error) {
       console.error(error);
@@ -107,12 +103,13 @@ const PostController = {
       const post = await Post.findByIdAndUpdate(
         req.params._id,
         {
+
           $push: {
             likes: req.user._id,
           },
         },
         { new: true }
-      );
+      )
       res.send({message: 'Like dado con éxito', post})
     } catch (error) {
       console.error(error)
@@ -123,8 +120,7 @@ const PostController = {
   async removeLike(req, res) {
     try {
       const post = await Post.findByIdAndUpdate(
-        req.params._id,
-        
+        req.params._id, 
         {
           $pull: {
             likes: req.user._id,

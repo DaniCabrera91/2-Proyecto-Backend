@@ -10,6 +10,9 @@ router.delete('/logout', authentication, UserController.logout)
 
 router.get('/', UserController.getAll)
 router.get('/loggedUser', authentication, UserController.getLoggedUser)
+router.get('/:name', UserController.getByName)
+router.get('/id/:_id', UserController.getById)
+
 
 
 

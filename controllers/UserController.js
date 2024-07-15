@@ -1,7 +1,7 @@
 const User = require('../models/User')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { jwt_secret } = require('../config/keys')
+require('dotenv').config()
 
 const UserController = {
 
@@ -58,7 +58,7 @@ const UserController = {
       if (!existingUser) {
         // User not found, proceed with normal login
         const newUser = new User({ email, password })
-        const token = jwt.sign({ _id: newUser._id }, jwt_secret)
+        const token = jwt.sign({ _id: newUser._id }, process.env.JWT_SECRET)
         await newUser.save();
         return res.send({ message: 'Bienvenido ' + newUser.name, token })
       }
@@ -74,7 +74,7 @@ const UserController = {
       if (existingToken) {
         return res.status(400).send({ message: 'Ya estás loggeado, desconectate antes de volver a logearte'})
       }
-      const newToken = jwt.sign({ _id: existingUser.id }, jwt_secret)
+      const newToken = jwt.sign({ _id: existingUser.id }, process.env.JWT_SECRET)
       existingUser.tokens.push(newToken);
       await existingUser.save();
   
@@ -111,59 +111,85 @@ const UserController = {
     }
   },
 
-  async getLoggedUser(req, res) {
-    try {
-      const token = req.headers.authorization
-      // Verify token and handle errors
-      const userLog = await jwt.verify(token, jwt_secret);
-      if (!userLog) {
-        return res.status(401).send({ message: 'Token no valido' })
-      }
-      // Fetch user data
-      const user = await User.findById(userLog._id).populate("posts")
-      if (!user) {
-        return res.status(404).send({ message: 'Usuario no encontrado asignado a ese token' })
-      }
+  
+async getLoggedUser(req, res) {
+  try {
+    const token = req.headers.authorization;
+    // Verify token and handle errors
 
-      // Filtrar datos sensibles excluyendolos de 
-      const userInfo = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      }
-      // Return filtered user data
-      res.json({ user: userInfo })
-    } catch (error) {
-      console.error(error)
+    const userLog = await jwt.verify(token, process.env.JWT_SECRET);
+    if (!userLog) {
+      return res.status(401).send({ message: 'Token no valido' });
     }
-  },
 
-  async getByName(req, res) {
-    try {
-      // Filter users based on query parameters (optional)
-      const filters = {};
-      if (req.query.name) {
-        filters.name = new RegExp(req.query.name, 'i'); // Case-insensitive search by name
-      }
-      if (req.query.role) {
-        filters.role = req.query.role;
-      }
-  
-      // Get all users with filters applied
-      const users = await User.find(filters);
-  
-      // Check if any users found
-      if (!users.length) {
-        return res.status(204).send({ message: 'No se encontraron usuarios' }); // 204 No Content
-      }
-  
-      // Send successful response with list of users
-      res.status(200).send(users);
-    } catch (error) {
-      console.error(error);
-      res.status(500).send({ message: 'Error al obtener usuarios' });
+    // Fetch user data and populate posts (Handling Promise)
+    const user = await User.findById(userLog._id).populate({
+      path: 'posts',
+      model: 'Post',
+      localField: 'posts', 
+    })
+
+    if (!user) {
+      return res.status(404).send({ message: 'Usuario no encontrado asignado a ese token' });
     }
-  },
+
+    const userInfo = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      posts: user.posts, // Include populated posts in the response
+    };
+
+    res.json({ user: userInfo });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Error al obtener información del usuario' }); // Generic error message
+  }
+},
+
+async getByName(req, res) {
+  try {
+    // Filter users by name (partial match, case-insensitive)
+    const filters = {};
+    if (req.params.name) {
+      filters.name = { $regex: req.params.name.toLowerCase(), $options: 'i' }; 
+    }
+
+    // Find one user matching the filter (or null if no match)
+    const user = await User.findOne(filters);
+
+    // Check if user found
+    if (!user) {
+      return res.status(404).send({ message: 'Usuario no encontrado' });
+    }
+
+    // Send successful response with the user object
+    res.status(200).send(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Error al obtener usuario' });
+  }
+},
+
+
+async getById(req, res) {
+  try {
+    // Find user by ID
+    const user = await User.findById(req.params._id);
+
+    // Check if user found
+    if (!user) {
+      return res.status(404).send({ message: 'Usuario no encontrado' });
+    }
+
+    // Send successful response with the user object
+    res.status(200).send(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Error al obtener usuario' });
+  }
+},
+
  }
 
 module.exports = UserController

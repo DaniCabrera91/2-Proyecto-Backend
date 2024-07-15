@@ -14,6 +14,6 @@ router.get ('/title/:title', PostController.getPostsByTitle)
 router.get ('/id/:_id',PostController.getById)
 
 router.put('/like/id/:_id', authentication, PostController.like)
-router.delete('/like/id/:_id', authentication, PostController.removeLike)
+router.put('/removeLike/id/:_id', authentication, PostController.removeLike)
 
 module.exports = router

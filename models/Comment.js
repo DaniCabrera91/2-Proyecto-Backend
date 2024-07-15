@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const ObjectId = mongoose.SchemaTypes.ObjectId;
+const mongoose = require("mongoose")
+const ObjectId = mongoose.SchemaTypes.ObjectId
 
 const CommentSchema = mongoose.Schema(
   {
