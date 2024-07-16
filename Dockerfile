@@ -11,4 +11,5 @@ RUN npm install
 # Copia los archivos de tu proyecto al directorio de trabajo
 COPY . ./
 # Inicia la aplicación cuando se ejecute el contenedor
-CMD ["npm", "start"]
+# Configure and start the application
+CMD ["node", "server.js"]

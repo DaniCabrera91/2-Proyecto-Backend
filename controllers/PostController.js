@@ -40,7 +40,7 @@ const PostController = {
     try {
       const updateData = {
         ...req.body, // Include all properties from request body (for multiple updates)
-      };
+      }
   
       const post = await Post.findByIdAndUpdate(
         req.params._id, // Use req.params.id for clarity
