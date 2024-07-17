@@ -1,25 +1,26 @@
-version: '3.6'
 services:
- api:
-   container_name: apiSocialBackend
-   build:
-     context: ./
-     dockerfile: Dockerfile
-   volumes:
-     - ./:/root/src
-   healthcheck:
-     disable: true
-   restart: unless-stopped
-   ports:
-     - 3001:3001
-   tty: true
- db:
-   image: mongo:latest
-   ports:
-     - 27017:27017
-   environment:
-     MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-     MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+
+    volumes:
+      - ./:/root/src
+
+    ports:
+      - ${PORT}:${PORT}
+
+  db:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+
+    env_file:
+      - .env
 
 

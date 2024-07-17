@@ -1,5 +1,5 @@
-const Comment = require("../models/Comment");
-const Post = require("../models/Post");
+const Comment = require("../models/Comment")
+const Post = require("../models/Post")
 
 const CommentController = {
 
@@ -39,43 +39,36 @@ const CommentController = {
       res.send(comment);
     } catch (error) {
       console.error(error);
-      res.status(400).send("Error trying to update comment");
+      res.status(400).send('Erro actualizando el comentario')
     }
   },
 
   async deleteComment(req, res) {
     try {
-      const deletedComment = await Comment.findByIdAndDelete(req.params._id);
+      const deletedComment = await Comment.findByIdAndDelete(req.params._id)
       if (!deletedComment) {
-        return res.status(404).send("Comment not found");
+        return res.status(404).send('Comentario no encontrado')
       }
-      res.send("Comment deleted successfully");
+      res.status(201).send('Comentario elimiando con éxito')
     } catch (error) {
-      console.error(error);
-      res.status(500).send("Error deleting comment");
+      console.error(error)
+      res.status(500).send('Error eliminado el comentario')
     }
   },
-
 
   async getAll(req, res) {
     try {
-      // Filter comments based on post ID (optional)
-      const filters = {};
+      const filters = {}
       if (req.params.id) {
         filters.postId = req.params.id;
       }
-  
-      // Find comments matching the filter
       const comments = await Comment.find(filters);
-  
-      // Send successful response with comments array
-      res.status(200).send(comments);
+      res.status(200).send(comments)
     } catch (error) {
-      console.error(error);
-      res.status(500).send({ message: 'Error al obtener comentarios' });
+      console.error(error)
+      res.status(500).send({ message: 'Error al obtener comentarios' })
     }
   },
-
 
   async like(req, res) {
     try {
@@ -88,7 +81,6 @@ const CommentController = {
         },
         { new: true } // Return the updated document
       )
-  
       res.send({ message: 'Like dado con éxito', comment })
     } catch (error) {
       console.error(error)

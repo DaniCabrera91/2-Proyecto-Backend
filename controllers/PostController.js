@@ -1,26 +1,24 @@
-const Post = require("../models/Post");
-const User = require("../models/User");
+const Post = require("../models/Post")
+const User = require("../models/User")
 
 const PostController = {
   async create(req, res, next) {
     try {
-      const post = await Post.create({ ...req.body, userId: req.user._id });
+      const post = await Post.create({ ...req.body, userId: req.user._id })
       await User.findByIdAndUpdate(req.user._id, {
         $push: { posts: post._id },
       })
-
-      res.status(201).send({ message: "Post creado con éxito", post });
+      res.status(201).send({ message: "Post creado con éxito", post })
     } catch (error) {
       console.error(error);
-      error.origin = "post";
+      error.origin = "post"
       next(error);
     }
   },
 
   async getAllPages(req, res) {
     try {
-      const { page = 1, limit = 10 } = req.query;
-  
+      const { page = 1, limit = 10 } = req.query
       const posts = await Post.find()
         .populate({ path: 'userId', select: 'name + email' })
         .populate({
@@ -28,33 +26,32 @@ const PostController = {
           populate: { path: 'userId', select: 'name + email' },
         })
         .limit(limit)
-        .skip((page - 1) * limit);
+        .skip((page - 1) * limit)
       res.send(posts);
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'Problema al mostrar los posts' });
+      res.status(400).send({ message: 'Problema al mostrar los posts' })
     }
   },
 
   async update(req, res) {
     try {
       const updateData = {
-        ...req.body, // Include all properties from request body (for multiple updates)
+        ...req.body,
       }
-  
       const post = await Post.findByIdAndUpdate(
-        req.params._id, // Use req.params.id for clarity
+        req.params._id,
         updateData,
         { new: true }
       )
       if (!post) {
         return res.status(404).send({ message: 'Post no encontrado con ese id' })
       }
-      res.status(200).send({ message: 'Post actualizado con éxito', post })// Success message and updated post
+      res.status(200).send({ message: 'Post actualizado con éxito', post })
     } catch (error) {
       console.error(error)
       if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map((e) => e.message);
+        const messages = Object.values(error.errors).map((e) => e.message)
         res.status(400).send({ message: 'Error de validación: ' + messages.join(', ') })
       } else {
         res.status(500).send({ message: "No ha sido posible actualizar el post" })
@@ -79,10 +76,10 @@ const PostController = {
           $search: req.params.title,
         },
       }).populate("userId comments likes");
-      res.send(posts);
+      res.satatus(200).send(posts);
     } catch (error) {
-      console.error(error);
-      res.status(400).send({ message: 'no se ha encontrado ningun post con ese título'});
+      console.error(error)
+      res.status(400).send({ message: 'no se ha encontrado ningun post con ese título'})
     }
   },
 
@@ -91,7 +88,7 @@ const PostController = {
       const post = await Post.findById(req.params._id).populate(
         "userId comments likes"
       )
-      res.send(post);
+      res.status(200).send(post);
     } catch (error) {
       console.error(error);
       res.status(400).send({ message: 'No han podido encontrarse el post por ID' })
@@ -103,14 +100,13 @@ const PostController = {
       const post = await Post.findByIdAndUpdate(
         req.params._id,
         {
-
           $push: {
             likes: req.user._id,
           },
         },
         { new: true }
       )
-      res.send({message: 'Like dado con éxito', post})
+      res.status(201).send({message: 'Like dado con éxito', post})
     } catch (error) {
       console.error(error)
       res.status(400).send({ message: 'No ha podido darse like al post' })
@@ -128,7 +124,7 @@ const PostController = {
         },
         { new: true }
       )
-      res.send({message: 'Like quitado con éxito', post})   
+      res.status(201).send({message: 'Like quitado con éxito', post})   
     } catch (error) {
       console.error(error)
       res.status(400).send({ message: 'No ha podido eliminarse el like del post' })
