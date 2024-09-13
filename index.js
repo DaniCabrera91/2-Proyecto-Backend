@@ -1,4 +1,5 @@
 const express = require ('express')
+const cors = require('cors')
 const app = express()
 require('dotenv').config()
 
@@ -8,7 +9,7 @@ app.use(express.json())
 const { typeError } = require('./middlewares/errors')
 
 dbConnection()
-
+app.use(cors())
 
 app.use('/users', require('./routes/users'))
 app.use('/posts', require('./routes/posts'))

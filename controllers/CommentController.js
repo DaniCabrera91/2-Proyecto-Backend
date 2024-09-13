@@ -79,7 +79,7 @@ const CommentController = {
             likes: req.user._id,
           },
         },
-        { new: true } // Return the updated document
+        { new: true }
       )
       res.send({ message: 'Like dado con éxito', comment })
     } catch (error) {
