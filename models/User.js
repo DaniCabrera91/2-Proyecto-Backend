@@ -1,11 +1,15 @@
-const mongoose = require('mongoose')
-const ObjectId = mongoose.SchemaTypes.ObjectId
-
+const mongoose = require('mongoose');
+const ObjectId = mongoose.SchemaTypes.ObjectId;
 
 const UserSchema = new mongoose.Schema({
-  name: {
+  firstName: {
     type: String,
     required: [true, 'Por favor rellena tu nombre'],
+  },
+  username: {
+    type: String,
+    unique: true,
+    required: [true, 'Por favor rellena tu nombre de usuario'],
   },
   email: {
     type: String,
@@ -16,21 +20,28 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Por favor rellena tu contraseña'],
+    minlength: 6
   },
-  age: {
-    type: Number,
-    required: [true, 'Por favor rellena tu edad'],
+  role: {
+    type: String,
+    default: 'user'
   },
-  role: String,
   tokens: [],
   wishList: [{ type: ObjectId, ref: 'Post' }],
   posts: [{ type: ObjectId, ref: 'Post' }],
   follows: [{ type: ObjectId, ref: 'User' }],
   followers: [{ type: ObjectId, ref: 'User' }],
-},
+}, 
 { timestamps: true }
 )
-const User = mongoose.model('User', UserSchema)
 
-module.exports = User
+UserSchema.methods.toJSON = function () {
+  const user = this._doc;
+  delete user.tokens;
+  delete user.password;
+  return user;
+}
 
+const User = mongoose.model('User', UserSchema);
+
+module.exports = User;
