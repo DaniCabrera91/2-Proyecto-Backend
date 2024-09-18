@@ -1,20 +1,12 @@
-const mongoose = require('mongoose')
-const ObjectId = mongoose.SchemaTypes.ObjectId
+const mongoose = require('mongoose');
+const ObjectId = mongoose.SchemaTypes.ObjectId;
 
 const PostSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Por favor introduce un titulo'],
-    unique: true,
-    validate: {
-      validator: async (value) => {
-        const existingPost = await Post.findOne({ title: value })
-        return !existingPost
-      },
-      message: 'Ya existe un post con ese título.',
-    },
+    required: [true, 'Por favor introduce un título'],
+    unique: false,
   },
-  
   body: {
     type: String,
     required: [true, 'Por favor añade contenido al post'],
@@ -26,11 +18,13 @@ const PostSchema = new mongoose.Schema({
   },
   likes: [{ type: ObjectId, ref: 'User' }],
   comments: [{ type: ObjectId, ref: 'Comment' }],
-}, { timestamps: true })
+  imageUrl: {
+    type: String,
+  },
+}, { timestamps: true });
 
-PostSchema.index({ title: 'text' }, { unique: false })
+PostSchema.index({ title: 'text' }, { unique: false });
 
-const Post = mongoose.model('Post', PostSchema)
+const Post = mongoose.model('Post', PostSchema);
 
-module.exports = Post
-
+module.exports = Post;

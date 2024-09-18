@@ -20,27 +20,26 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Por favor rellena tu contraseña'],
-    minlength: 6
+    minlength: 6,
   },
   role: {
     type: String,
-    default: 'user'
+    default: 'user',
   },
   tokens: [],
   wishList: [{ type: ObjectId, ref: 'Post' }],
   posts: [{ type: ObjectId, ref: 'Post' }],
   follows: [{ type: ObjectId, ref: 'User' }],
   followers: [{ type: ObjectId, ref: 'User' }],
-}, 
-{ timestamps: true }
-)
+  profileImageUrl: { type: String },
+}, { timestamps: true });
 
 UserSchema.methods.toJSON = function () {
   const user = this._doc;
   delete user.tokens;
   delete user.password;
   return user;
-}
+};
 
 const User = mongoose.model('User', UserSchema);
 

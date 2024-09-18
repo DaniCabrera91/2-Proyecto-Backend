@@ -1,97 +1,137 @@
-const Post = require("../models/Post")
-const User = require("../models/User")
+const cloudinary = require('../config/cloudinaryConfig');
+const Post = require("../models/Post");
+const User = require("../models/User");
+const upload = require('../middlewares/multerConfig');
 
 const PostController = {
+  uploadImage: upload.single('image'),
+
   async create(req, res, next) {
     try {
-      const post = await Post.create({ ...req.body, userId: req.user._id })
+      let imageUrl;
+
+      if (req.file) {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        console.log('Cloudinary result:', result); // Asegúrate de que `result.secure_url` esté presente
+        imageUrl = result.secure_url;
+      }
+
+      console.log('Datos del post a crear:', {
+        ...req.body,
+        userId: req.user._id,
+        imageUrl
+      });
+
+      const post = await Post.create({
+        ...req.body,
+        userId: req.user._id,
+        imageUrl // Si no hay imagen, este campo será undefined
+      });
+
+      console.log('Post creado:', post); // Verifica los datos del post creado
+
       await User.findByIdAndUpdate(req.user._id, {
         $push: { posts: post._id },
-      })
-      res.status(201).send({ message: "Post creado con éxito", post })
-    } catch (error) {
-      console.error(error);
-      error.origin = "post"
-      next(error);
-    }
-  },
+      });
 
-  async getAllPages(req, res) {
-    try {
-      const { page = 1, limit = 10 } = req.query
-      const posts = await Post.find()
-        .populate({ path: 'userId', select: 'name + email' })
-        .populate({
-          path: 'comments',
-          populate: { path: 'userId', select: 'name + email' },
-        })
-        .limit(limit)
-        .skip((page - 1) * limit)
-      res.send(posts);
+      res.status(201).send({ message: "Post creado con éxito", post });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'Problema al mostrar los posts' })
+      error.origin = "post";
+      next(error);
     }
   },
 
   async update(req, res) {
     try {
-      const updateData = {
-        ...req.body,
+      const updateData = { ...req.body };
+      if (req.file) {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        console.log('Cloudinary result:', result); // Verifica el resultado de Cloudinary
+        updateData.imageUrl = result.secure_url;
       }
       const post = await Post.findByIdAndUpdate(
         req.params._id,
         updateData,
         { new: true }
-      )
+      );
       if (!post) {
-        return res.status(404).send({ message: 'Post no encontrado con ese id' })
+        return res.status(404).send({ message: 'Post no encontrado con ese id' });
       }
-      res.status(200).send({ message: 'Post actualizado con éxito', post })
+      res.status(200).send({ message: 'Post actualizado con éxito', post });
     } catch (error) {
-      console.error(error)
+      console.error(error);
       if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map((e) => e.message)
-        res.status(400).send({ message: 'Error de validación: ' + messages.join(', ') })
+        const messages = Object.values(error.errors).map((e) => e.message);
+        res.status(400).send({ message: 'Error de validación: ' + messages.join(', ') });
       } else {
-        res.status(500).send({ message: "No ha sido posible actualizar el post" })
+        res.status(500).send({ message: "No ha sido posible actualizar el post" });
       }
     }
   },
 
   async delete(req, res) {
     try {
-      await Post.findByIdAndDelete(req.params._id)
-      res.send({ message: 'Post eliminado con éxito' })
+      await Post.findByIdAndDelete(req.params._id);
+      res.send({ message: 'Post eliminado con éxito' });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha sido posible eliminar el post' })
+      res.status(400).send({ message: 'No ha sido posible eliminar el post' });
+    }
+  },
+
+  async getAll(req, res) {
+    try {
+      const posts = await Post.find()
+        .populate({ path: 'userId', select: 'username profileImageUrl' })
+        .populate({
+          path: 'comments',
+          populate: { path: 'userId', select: 'username profileImageUrl' },
+        });
+      res.send(posts);
+    } catch (error) {
+      console.error(error);
+      res.status(400).send({ message: 'Problema al mostrar los posts' });
+    }
+  },
+
+  async getAllPages(req, res) {
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const posts = await Post.find()
+        .populate({ path: 'userId', select: 'username profileImageUrl' })
+        .populate({
+          path: 'comments',
+          populate: { path: 'userId', select: 'username profileImageUrl' },
+        })
+        .limit(parseInt(limit))
+        .skip((parseInt(page) - 1) * parseInt(limit));
+      res.send(posts);
+    } catch (error) {
+      console.error(error);
+      res.status(400).send({ message: 'Problema al mostrar los posts' });
     }
   },
 
   async getPostsByTitle(req, res) {
     try {
       const posts = await Post.find({
-        $text: {
-          $search: req.params.title,
-        },
+        $text: { $search: req.params.title },
       }).populate("userId comments likes");
-      res.satatus(200).send(posts);
+      res.status(200).send(posts);
     } catch (error) {
-      console.error(error)
-      res.status(400).send({ message: 'no se ha encontrado ningun post con ese título'})
+      console.error(error);
+      res.status(400).send({ message: 'No se ha encontrado ningún post con ese título' });
     }
   },
 
   async getById(req, res) {
     try {
-      const post = await Post.findById(req.params._id).populate(
-        "userId comments likes"
-      )
+      const post = await Post.findById(req.params._id).populate("userId comments likes");
       res.status(200).send(post);
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No han podido encontrarse el post por ID' })
+      res.status(400).send({ message: 'No se ha podido encontrar el post por ID' });
     }
   },
 
@@ -99,37 +139,29 @@ const PostController = {
     try {
       const post = await Post.findByIdAndUpdate(
         req.params._id,
-        {
-          $push: {
-            likes: req.user._id,
-          },
-        },
+        { $push: { likes: req.user._id } },
         { new: true }
-      )
-      res.status(201).send({message: 'Like dado con éxito', post})
+      );
+      res.status(201).send({ message: 'Like dado con éxito', post });
     } catch (error) {
-      console.error(error)
-      res.status(400).send({ message: 'No ha podido darse like al post' })
+      console.error(error);
+      res.status(400).send({ message: 'No ha podido darse like al post' });
     }
   },
 
   async removeLike(req, res) {
     try {
       const post = await Post.findByIdAndUpdate(
-        req.params._id, 
-        {
-          $pull: {
-            likes: req.user._id,
-          },
-        },
+        req.params._id,
+        { $pull: { likes: req.user._id } },
         { new: true }
-      )
-      res.status(201).send({message: 'Like quitado con éxito', post})   
+      );
+      res.status(201).send({ message: 'Like quitado con éxito', post });
     } catch (error) {
-      console.error(error)
-      res.status(400).send({ message: 'No ha podido eliminarse el like del post' })
+      console.error(error);
+      res.status(400).send({ message: 'No ha podido eliminarse el like del post' });
     }
   },
-}
+};
 
-module.exports = PostController
+module.exports = PostController;
