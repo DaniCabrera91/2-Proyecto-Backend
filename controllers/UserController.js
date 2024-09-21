@@ -8,62 +8,60 @@ require('dotenv').config();
 const UserController = {
   uploadImage: upload.single('profileImage'),
 
-// UserController.js
-async register(req, res, next) {
-  try {
-    const { firstName, username, email, password } = req.body;
-    const passwordHash = await bcrypt.hash(password, 10);
+  async register(req, res, next) {
+    try {
+      const { firstName, username, email, password } = req.body;
+      const passwordHash = await bcrypt.hash(password, 10);
 
-    let profileImageUrl = 'https://res.cloudinary.com/dyt3uvyo7/image/upload/v1726674676/sfi2eyie8qwb9qd4xoli.jpg';
-    
-    if (req.file) {
-      // Aquí ya no necesitas subir la imagen a Cloudinary, multer lo hará
-      profileImageUrl = req.file.path;
+      let profileImageUrl = 'https://res.cloudinary.com/dyt3uvyo7/image/upload/v1726906771/user_uploads/ykklfbd4uewiexlicycv.png';
+      
+      if (req.file) {
+        profileImageUrl = req.file.path;
+      }
+
+      const user = await User.create({
+        firstName,
+        username,
+        email,
+        password: passwordHash,
+        profileImageUrl,
+        role: 'user',
+      });
+
+      res.status(201).send({ message: "Usuario registrado con éxito", user });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({ message: 'Error al registrar el usuario', error: error.message });
     }
+  },
 
-    const user = await User.create({
-      firstName,
-      username,
-      email,
-      password: passwordHash,
-      profileImageUrl,
-      role: 'user',
-    });
+  async updateUser(req, res, next) {
+    try {
+      if (req.body.password) {
+        const passwordHash = await bcrypt.hash(req.body.password, 10);
+        req.body.password = passwordHash;
+      }
+      let updateData = { ...req.body };
+      if (req.file) {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        updateData.profileImageUrl = result.secure_url;
+      }
+      const user = await User.findByIdAndUpdate(
+        req.params._id,
+        updateData,
+        { new: true }
+      );
 
-    res.status(201).send({ message: "Usuario registrado con éxito", user });
-  } catch (error) {
-    error.origin = 'usuario';
-    next(error);
-  }
-},
+      if (!user) {
+        return res.status(404).send({ message: 'Usuario no encontrado' });
+      }
 
-
-async updateUser(req, res, next) {
-  try {
-    if (req.body.password) {
-      const passwordHash = await bcrypt.hash(req.body.password, 10);
-      req.body.password = passwordHash;
+      res.send({ message: 'Usuario actualizado con éxito', user });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({ message: 'Error al actualizar el usuario', error: error.message });
     }
-    let updateData = { ...req.body };
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path);
-      updateData.profileImageUrl = result.secure_url;
-    }
-    const user = await User.findByIdAndUpdate(
-      req.params._id,
-      updateData,
-      { new: true }
-    );
-    if (!user) {
-      return res.status(404).send({ message: 'Usuario no encontrado' });
-    }
-    res.send({ message: 'Usuario actualizado con éxito', user });
-  } catch (error) {
-    error.origin = 'usuario';
-    next(error);
-  }
-},
-
+  },
 
   async login(req, res) {
     try {
@@ -79,14 +77,15 @@ async updateUser(req, res, next) {
         return res.status(401).send({ message: 'Contraseña incorrecta.' });
       }
 
-      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
       user.tokens.push(token);
       await user.save();
 
       res.send({ message: 'Inicio de sesión exitoso', user, token });
     } catch (error) {
-      res.status(500).send({ message: 'Error al iniciar sesión', error });
+      console.error(error);
+      res.status(500).send({ message: 'Error al iniciar sesión', error: error.message });
     }
   },
 
@@ -98,9 +97,7 @@ async updateUser(req, res, next) {
       res.send({ message: 'Desconectado con éxito' });
     } catch (error) {
       console.error(error);
-      res.status(500).send({
-        message: 'Hubo un problema al intentar desconectar al usuario',
-      });
+      res.status(500).send({ message: 'Error al desconectar al usuario', error: error.message });
     }
   },
 
@@ -113,7 +110,7 @@ async updateUser(req, res, next) {
       res.send(users);
     } catch (error) {
       console.error(error);
-      res.status(500).send({ message: 'Error al obtener usuarios' });
+      res.status(500).send({ message: 'Error al obtener usuarios', error: error.message });
     }
   },
 
@@ -143,7 +140,7 @@ async updateUser(req, res, next) {
       res.send(user[0]);
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'Error al mostrar la información del usuario conectado' });
+      res.status(500).send({ message: 'Error al mostrar la información del usuario conectado', error: error.message });
     }
   },
 
@@ -160,7 +157,7 @@ async updateUser(req, res, next) {
       res.status(200).send(user);
     } catch (error) {
       console.error(error);
-      res.status(500).send({ message: 'Error al obtener usuario' });
+      res.status(500).send({ message: 'Error al obtener usuario', error: error.message });
     }
   },
 
@@ -173,14 +170,14 @@ async updateUser(req, res, next) {
       res.status(200).send(user);
     } catch (error) {
       console.error(error);
-      res.status(500).send({ message: 'Error al obtener usuario' });
+      res.status(500).send({ message: 'Error al obtener usuario', error: error.message });
     }
   },
 
   async follow(req, res) {
     try {
       if (`${req.params.id}` === `${req.user._id}`) {
-        return res.status(400).send('No puedes seguirte a ti mismo...');
+        return res.status(400).send({ message: 'No puedes seguirte a ti mismo...' });
       }
 
       await User.findByIdAndUpdate(req.params.id, 
@@ -195,7 +192,7 @@ async updateUser(req, res, next) {
       res.status(201).send({ message: 'Usuario seguido con éxito', user });
     } catch (error) {
       console.error(error);
-      res.status(400).send('Problema al seguir usuario');
+      res.status(500).send({ message: 'Error al seguir usuario', error: error.message });
     }
   },
 
@@ -211,9 +208,10 @@ async updateUser(req, res, next) {
         { new: true }
       );
 
-      res.status(201).send({ message: 'Usuario dejado de seguir con éxito', user });
+      res.status(200).send({ message: 'Usuario dejado de seguir con éxito', user });
     } catch (error) {
-      res.status(400).send('Problema al dejar de seguir usuario');
+      console.error(error);
+      res.status(500).send({ message: 'Error al dejar de seguir usuario', error: error.message });
     }
   },
 };

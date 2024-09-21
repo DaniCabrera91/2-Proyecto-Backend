@@ -1,53 +1,45 @@
 const cloudinary = require('../config/cloudinaryConfig');
 const Post = require("../models/Post");
 const User = require("../models/User");
-const upload = require('../middlewares/multerConfig');
 
 const PostController = {
-  uploadImage: upload.single('image'),
-
-  async create(req, res, next) {
+  async create(req, res) {
     try {
       let imageUrl;
 
       if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path);
-        console.log('Cloudinary result:', result); // Asegúrate de que `result.secure_url` esté presente
-        imageUrl = result.secure_url;
+        imageUrl = req.file.path;
       }
 
-      console.log('Datos del post a crear:', {
-        ...req.body,
-        userId: req.user._id,
-        imageUrl
-      });
-
+      if (!req.body.title || !req.body.body) {
+        return res.status(400).send({ message: 'El título y el cuerpo del post son obligatorios.' });
+      }
+      
       const post = await Post.create({
-        ...req.body,
+        title: req.body.title,
+        body: req.body.body,
         userId: req.user._id,
-        imageUrl // Si no hay imagen, este campo será undefined
+        imageUrl,
       });
 
-      console.log('Post creado:', post); // Verifica los datos del post creado
-
-      await User.findByIdAndUpdate(req.user._id, {
-        $push: { posts: post._id },
-      });
+      await User.findByIdAndUpdate(req.user._id, { $push: { posts: post._id } });
 
       res.status(201).send({ message: "Post creado con éxito", post });
     } catch (error) {
       console.error(error);
-      error.origin = "post";
-      next(error);
+      res.status(500).send({ message: 'Error al crear el post', error: error.message });
     }
   },
 
   async update(req, res) {
     try {
       const updateData = { ...req.body };
+
       if (req.file) {
         const result = await cloudinary.uploader.upload(req.file.path);
-        console.log('Cloudinary result:', result); // Verifica el resultado de Cloudinary
+        if (!result || !result.secure_url) {
+          return res.status(500).send({ message: 'No se ha podido subir la imagen a Cloudinary.' });
+        }
         updateData.imageUrl = result.secure_url;
       }
       const post = await Post.findByIdAndUpdate(
@@ -55,28 +47,27 @@ const PostController = {
         updateData,
         { new: true }
       );
+
       if (!post) {
-        return res.status(404).send({ message: 'Post no encontrado con ese id' });
+        return res.status(404).send({ message: 'Post no encontrado' });
       }
       res.status(200).send({ message: 'Post actualizado con éxito', post });
     } catch (error) {
       console.error(error);
-      if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map((e) => e.message);
-        res.status(400).send({ message: 'Error de validación: ' + messages.join(', ') });
-      } else {
-        res.status(500).send({ message: "No ha sido posible actualizar el post" });
-      }
+      res.status(500).send({ message: 'Error al actualizar el post', error: error.message });
     }
   },
 
   async delete(req, res) {
     try {
-      await Post.findByIdAndDelete(req.params._id);
+      const deletedPost = await Post.findByIdAndDelete(req.params._id);
+      if (!deletedPost) {
+        return res.status(404).send({ message: 'Post no encontrado' });
+      }
       res.send({ message: 'Post eliminado con éxito' });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha sido posible eliminar el post' });
+      res.status(500).send({ message: 'Error al eliminar el post', error: error.message });
     }
   },
 
@@ -91,7 +82,7 @@ const PostController = {
       res.send(posts);
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'Problema al mostrar los posts' });
+      res.status(500).send({ message: 'Error al obtener posts', error: error.message });
     }
   },
 
@@ -109,29 +100,26 @@ const PostController = {
       res.send(posts);
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'Problema al mostrar los posts' });
-    }
-  },
-
-  async getPostsByTitle(req, res) {
-    try {
-      const posts = await Post.find({
-        $text: { $search: req.params.title },
-      }).populate("userId comments likes");
-      res.status(200).send(posts);
-    } catch (error) {
-      console.error(error);
-      res.status(400).send({ message: 'No se ha encontrado ningún post con ese título' });
+      res.status(500).send({ message: 'Error al obtener posts', error: error.message });
     }
   },
 
   async getById(req, res) {
     try {
-      const post = await Post.findById(req.params._id).populate("userId comments likes");
+      const post = await Post.findById(req.params._id)
+        .populate({ path: 'userId', select: 'username profileImageUrl' })
+        .populate({
+          path: 'comments',
+          populate: { path: 'userId', select: 'username profileImageUrl' },
+        });
+
+      if (!post) {
+        return res.status(404).send({ message: 'Post no encontrado' });
+      }
       res.status(200).send(post);
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No se ha podido encontrar el post por ID' });
+      res.status(500).send({ message: 'Error al obtener post por ID', error: error.message });
     }
   },
 
@@ -142,10 +130,14 @@ const PostController = {
         { $push: { likes: req.user._id } },
         { new: true }
       );
-      res.status(201).send({ message: 'Like dado con éxito', post });
+
+      if (!post) {
+        return res.status(404).send({ message: 'Post no encontrado' });
+      }
+      res.status(200).send({ message: 'Like dado con éxito', post });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha podido darse like al post' });
+      res.status(500).send({ message: 'Error al dar like al post', error: error.message });
     }
   },
 
@@ -156,12 +148,16 @@ const PostController = {
         { $pull: { likes: req.user._id } },
         { new: true }
       );
-      res.status(201).send({ message: 'Like quitado con éxito', post });
+
+      if (!post) {
+        return res.status(404).send({ message: 'Post no encontrado' });
+      }
+      res.status(200).send({ message: 'Like quitado con éxito', post });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha podido eliminarse el like del post' });
+      res.status(500).send({ message: 'Error al quitar el like del post', error: error.message });
     }
-  },
+  }
 };
 
 module.exports = PostController;

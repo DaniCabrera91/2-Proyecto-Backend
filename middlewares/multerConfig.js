@@ -1,6 +1,6 @@
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinaryConfig'); // Asegúrate de que la ruta es correcta
+const cloudinary = require('../config/cloudinaryConfig');
 
 // Configuración de Cloudinary
 const storage = new CloudinaryStorage({
@@ -23,7 +23,6 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
 });
 
 module.exports = upload;

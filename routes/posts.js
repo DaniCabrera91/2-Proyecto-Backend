@@ -9,7 +9,7 @@ router.put('/:_id', authentication, isAuthor, upload.single('image'), PostContro
 router.delete('/:_id', authentication, isAuthor, PostController.delete);
 router.get('/', PostController.getAll);
 router.get('/pages', PostController.getAllPages);
-router.get('/id/:_id', PostController.getById);
+router.get('/id/:_id', PostController.getById); 
 router.put('/like/id/:_id', authentication, PostController.like);
 router.put('/removeLike/id/:_id', authentication, PostController.removeLike);
 

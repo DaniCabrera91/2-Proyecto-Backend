@@ -2,28 +2,29 @@ const Comment = require("../models/Comment");
 const Post = require("../models/Post");
 
 const CommentController = {
-
   async create(req, res) {
     try {
       const postId = req.params._id;
+      if (!req.body.comment) {
+        return res.status(400).send({ message: 'El comentario no puede estar vacío.' });
+      }
+
       const comment = await Comment.create({
         ...req.body,
         postId,
         userId: req.user._id,
       });
+
       await Post.findByIdAndUpdate(
-        req.params._id,
-        {
-          $push: {
-            comments: comment._id,
-          },
-        },
+        postId,
+        { $push: { comments: comment._id } },
         { new: true }
       );
+
       res.status(201).send({ message: 'Comentario creado con éxito', comment });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha sido posible crear el comentario' });
+      res.status(500).send({ message: 'Error al crear el comentario', error: error.message });
     }
   },
 
@@ -34,10 +35,15 @@ const CommentController = {
         { comment: req.body.comment },
         { new: true }
       );
-      res.send(comment);
+
+      if (!comment) {
+        return res.status(404).send({ message: 'Comentario no encontrado' });
+      }
+
+      res.send({ message: 'Comentario actualizado con éxito', comment });
     } catch (error) {
       console.error(error);
-      res.status(400).send('Error actualizando el comentario');
+      res.status(500).send({ message: 'Error actualizando el comentario', error: error.message });
     }
   },
 
@@ -45,12 +51,12 @@ const CommentController = {
     try {
       const deletedComment = await Comment.findByIdAndDelete(req.params._id);
       if (!deletedComment) {
-        return res.status(404).send('Comentario no encontrado');
+        return res.status(404).send({ message: 'Comentario no encontrado' });
       }
-      res.status(201).send('Comentario eliminado con éxito');
+      res.status(200).send({ message: 'Comentario eliminado con éxito' });
     } catch (error) {
       console.error(error);
-      res.status(500).send('Error eliminando el comentario');
+      res.status(500).send({ message: 'Error eliminando el comentario', error: error.message });
     }
   },
 
@@ -64,7 +70,7 @@ const CommentController = {
       res.status(200).send(comments);
     } catch (error) {
       console.error(error);
-      res.status(500).send({ message: 'Error al obtener comentarios' });
+      res.status(500).send({ message: 'Error al obtener comentarios', error: error.message });
     }
   },
 
@@ -75,10 +81,15 @@ const CommentController = {
         { $push: { likes: req.user._id } },
         { new: true }
       );
+
+      if (!comment) {
+        return res.status(404).send({ message: 'Comentario no encontrado' });
+      }
+
       res.send({ message: 'Like dado con éxito', comment });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha podido darse like al comentario' });
+      res.status(500).send({ message: 'Error al dar like al comentario', error: error.message });
     }
   },
 
@@ -89,10 +100,15 @@ const CommentController = {
         { $pull: { likes: req.user._id } },
         { new: true }
       );
+
+      if (!comment) {
+        return res.status(404).send({ message: 'Comentario no encontrado' });
+      }
+
       res.send({ message: 'Like quitado con éxito', comment });
     } catch (error) {
       console.error(error);
-      res.status(400).send({ message: 'No ha podido eliminarse el like del comentario' });
+      res.status(500).send({ message: 'Error al quitar el like del comentario', error: error.message });
     }
   },
 };
