@@ -10,6 +10,7 @@ router.delete('/:_id', authentication, isAuthor, PostController.delete)
 router.get('/', PostController.getAll)
 router.get('/pages', PostController.getAllPages)
 router.get('/id/:_id', PostController.getById)
+router.get('/user/:userId', authentication, PostController.getPostsByUser)
 router.put('/like/id/:_id', authentication, PostController.like)
 router.put('/removeLike/id/:_id', authentication, PostController.removeLike)
 

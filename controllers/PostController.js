@@ -112,6 +112,24 @@ const PostController = {
       res.status(500).send({ message: 'Error al obtener post por ID. Intenta de nuevo más tarde.', error: error.message })
     }
   },
+  
+  async getPostsByUser(req, res) {
+    try {
+      const userId = req.params.userId;
+      const posts = await Post.find({ userId })
+        .populate({ path: 'userId', select: 'username profileImageUrl' })
+        .populate({ path: 'comments', populate: { path: 'userId', select: 'username profileImageUrl' } });
+
+      if (!posts || posts.length === 0) {
+        return res.status(404).send({ message: 'No se encontraron posts para este usuario.' });
+      }
+
+      res.status(200).send(posts);
+    } catch (error) {
+      console.error('Error al obtener posts del usuario:', error);
+      res.status(500).send({ message: 'Error al obtener posts del usuario.', error: error.message });
+    }
+  },
 
   async like(req, res) {
     try {

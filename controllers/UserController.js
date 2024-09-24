@@ -35,33 +35,34 @@ const UserController = {
     }
   },
 
-  async updateUser(req, res, next) {
+  async updateUser(req, res) {
     try {
-      if (req.body.password) {
-        const passwordHash = await bcrypt.hash(req.body.password, 10)
-        req.body.password = passwordHash
-      }
-      let updateData = { ...req.body }
+      const userId = req.params._id; // Obtiene el ID del usuario
+      const updates = req.body; // Obtiene los datos que deseas actualizar
+  
+      // Si tienes una imagen, actualiza la URL en `updates`
       if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path)
-        updateData.profileImageUrl = result.secure_url
+        updates.profileImageUrl = req.file.path; // Ajusta según tu lógica de almacenamiento
       }
-      const user = await User.findByIdAndUpdate(
-        req.params._id,
-        updateData,
-        { new: true }
-      )
-
-      if (!user) {
-        return res.status(404).send({ message: 'Usuario no encontrado' })
+  
+      // Busca y actualiza el usuario
+      const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+        new: true,
+        runValidators: true,
+      });
+  
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
       }
-
-      res.send({ message: 'Usuario actualizado con éxito', user })
+  
+      // Envía la respuesta con el usuario actualizado en un objeto
+      return res.status(200).json({ user: updatedUser });
     } catch (error) {
-      console.error(error)
-      res.status(500).send({ message: 'Error al actualizar el usuario', error: error.message })
+      console.error('Error al actualizar el usuario:', error);
+      return res.status(500).json({ message: 'Error al actualizar el usuario', error });
     }
   },
+  
 
   async login(req, res) {
     try {
