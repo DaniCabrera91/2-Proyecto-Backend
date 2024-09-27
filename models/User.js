@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const ObjectId = mongoose.SchemaTypes.ObjectId;
+const mongoose = require('mongoose')
+const ObjectId = mongoose.SchemaTypes.ObjectId
 
 const UserSchema = new mongoose.Schema({
   firstName: {
@@ -32,15 +32,15 @@ const UserSchema = new mongoose.Schema({
   follows: [{ type: ObjectId, ref: 'User' }],
   followers: [{ type: ObjectId, ref: 'User' }],
   profileImageUrl: { type: String },
-}, { timestamps: true });
+}, { timestamps: true })
 
 UserSchema.methods.toJSON = function () {
-  const user = this._doc;
-  delete user.tokens;
-  delete user.password;
-  return user;
+  const user = this._doc
+  delete user.tokens
+  delete user.password
+  return user
 };
 
-const User = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema)
 
-module.exports = User;
+module.exports = User
