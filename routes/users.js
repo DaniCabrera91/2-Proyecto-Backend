@@ -12,7 +12,7 @@ router.get('/', UserController.getAll)
 router.get('/loggedUser', authentication, UserController.getLoggedUser)
 router.get('/:name', UserController.getByName)
 router.get('/id/:_id', UserController.getById)
-router.put('/follow/:id', authentication, UserController.follow)
-router.put('/unfollow/:id', authentication, UserController.unfollow)
+router.put('/follow/:id', authentication, UserController.followUser)
+router.put('/unfollow/:id', authentication, UserController.unfollowUser)
 
 module.exports = router

@@ -177,46 +177,67 @@ const UserController = {
     }
   },
 
-  async follow(req, res) {
-    try {
-      if (`${req.params.id}` === `${req.user._id}`) {
-        return res.status(400).send({ message: 'No puedes seguirte a ti mismo...' })
-      }
+  // followUser
+async followUser(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id.toString();
 
-      await User.findByIdAndUpdate(req.params.id, 
-        { $push: { followers: req.user._id }},
-        { new: true }
-      );
-      const user = await User.findByIdAndUpdate(
-        req.user._id,
-        { $push: { follows: req.params.id } },
-        { new: true }
-      );
-      res.status(201).send({ message: 'Usuario seguido con éxito', user })
-    } catch (error) {
-      console.error(error)
-      res.status(500).send({ message: 'Error al seguir usuario', error: error.message })
+    if (!userId || userId === currentUserId) {
+      return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
     }
-  },
 
-  async unfollow(req, res) {
-    try {
-      await User.findByIdAndUpdate(req.params.id, {
-        $pull: { followers: req.user._id },
-      })
+    const userToFollow = await User.findById(userId);
+    const currentUser = await User.findById(currentUserId);
 
-      const user = await User.findByIdAndUpdate(
-        req.user._id,
-        { $pull: { follows: req.params.id } },
-        { new: true }
-      )
-
-      res.status(200).send({ message: 'Usuario dejado de seguir con éxito', user })
-    } catch (error) {
-      console.error(error)
-      res.status(500).send({ message: 'Error al dejar de seguir usuario', error: error.message })
+    if (!userToFollow) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-  },
+
+    if (!currentUser.follows.includes(userId)) {
+      currentUser.follows.push(userId);
+      await currentUser.save();
+    }
+
+    userToFollow.followers.push(currentUserId);
+    await userToFollow.save();
+
+    res.json({ user: currentUser });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al seguir al usuario' });
+  }
+},
+
+// unfollowUser
+async unfollowUser(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id.toString();
+
+    if (!userId || userId === currentUserId) {
+      return res.status(400).json({ error: 'No puedes dejar de seguirte a ti mismo' });
+    }
+
+    const userToUnfollow = await User.findById(userId);
+    const currentUser = await User.findById(currentUserId);
+
+    if (!userToUnfollow) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    currentUser.follows = currentUser.follows.filter(id => id.toString() !== userId);
+    userToUnfollow.followers = userToUnfollow.followers.filter(id => id.toString() !== currentUserId);
+
+    await currentUser.save();
+    await userToUnfollow.save();
+
+    res.json({ user: currentUser });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al dejar de seguir al usuario' });
+  }
+},
+
+  
 }
 
 module.exports = UserController
